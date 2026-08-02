@@ -8,7 +8,11 @@ from app.dependencies import get_current_user, get_db
 from app.exceptions import NotFoundError
 from app.models.conversation import Conversation
 from app.repositories import conversation_repository, message_repository
-from app.schemas.conversation import ConversationCreateRequest, ConversationResponse, MessageResponse
+from app.schemas.conversation import (
+    ConversationCreateRequest,
+    ConversationResponse,
+    MessageResponse,
+)
 
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 

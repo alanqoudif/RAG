@@ -17,7 +17,11 @@ from app.exceptions import NotFoundError
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.message_citation import MessageCitation
-from app.repositories import conversation_repository, message_citation_repository, message_repository
+from app.repositories import (
+    conversation_repository,
+    message_citation_repository,
+    message_repository,
+)
 from app.services.audit_service import record_audit_event
 from app.services.llm.ollama_client import OllamaClient
 

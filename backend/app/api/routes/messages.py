@@ -6,7 +6,11 @@ from sqlalchemy.orm import Session
 from app.core.tenant_context import CurrentUser
 from app.dependencies import get_current_user, get_db
 from app.exceptions import NotFoundError
-from app.repositories import message_citation_repository, message_repository, query_execution_repository
+from app.repositories import (
+    message_citation_repository,
+    message_repository,
+    query_execution_repository,
+)
 from app.schemas.conversation import CitationResponse, SqlDetailResponse
 
 router = APIRouter(prefix="/messages", tags=["messages"])
