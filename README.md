@@ -74,6 +74,24 @@ POST /api/database-connections/{connection_id}/permissions
 the caller's own permissions resolve to — the same shape the LLM prompt is built from, so it
 doubles as a way to verify a grant took effect.
 
+### Documents and knowledge bases
+
+```bash
+# create a knowledge base
+curl -X POST http://localhost:8000/api/knowledge-bases -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"name": "contracts"}'
+
+# upload a file (PDF/DOCX/XLSX/CSV/TXT) — processing runs asynchronously via Celery
+curl -X POST http://localhost:8000/api/files/upload -H "Authorization: Bearer $TOKEN" \
+  -F "upload=@sample_data/sample_contract.pdf" -F "knowledge_base_id=<kb-uuid>"
+
+# poll GET /api/files/{id} until processing_status is "completed"
+```
+
+`scripts/seed.py` (when `SEED_ON_STARTUP=true`) also creates a `contracts` knowledge base and
+processes `sample_data/sample_contract.pdf` synchronously at startup, so the demo tenant has a
+ready-to-query document without waiting on the Celery worker.
+
 Use the **full** profile for a larger local LLM, the reranker, and monitoring:
 
 ```bash
@@ -163,6 +181,9 @@ See `backend/pyproject.toml` for the full dependency list. Notable choices and w
   provider interface so the model can be swapped for better Arabic/multilingual support.
 - **Qdrant** — vector store, chosen over pgvector-only to keep vector search isolated and independently
   scalable, with mandatory tenant + knowledge-base filtering on every query.
+- **pypdf / python-docx / openpyxl** — lightweight, dependency-free format parsers used by default;
+  **Docling** is wired in behind `USE_DOCLING=true` for higher-quality layout-aware parsing but is
+  off by default (its first run downloads its own layout/OCR models).
 - **structlog + prometheus-client + OpenTelemetry** — structured JSON logs, metrics, and tracing without
   a hosted APM.
 

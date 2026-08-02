@@ -194,9 +194,13 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 
 ## 10. Document Retrieval & Hybrid Chat
 
-- [ ] Query rewrite (optional), embed, tenant-filtered Qdrant search, KB filtering, top-k, optional rerank,
-      evidence selection, grounded answer, citations (file, page, section, chunk id, score)
-- [ ] Insufficient-evidence response when evidence lacking
+- [T] Embed, tenant-filtered Qdrant search, KB filtering, top-k, optional rerank (code wired,
+      disabled by default — not load-tested, same resource-budget reasoning as Docling), citations
+      (file, page, section, chunk id, score) — `retrieval_service.retrieve` +
+      `citation_service.format_document_citation`, live-tested end-to-end. Query rewrite not yet
+      implemented (optional per PDF; deferred to Phase 6 if time allows)
+- [T] Insufficient-evidence guard: `citation_service.has_sufficient_evidence` (score-floor check);
+      wired into the actual chat answer path in Phase 6
 - [ ] Deterministic classification first, LLM classifier fallback: general/database/document/hybrid/clarification
 - [ ] Hybrid: parallel retrieval, separate outputs, merge only approved results, answer distinguishes DB
       findings / doc evidence / combined conclusion
@@ -217,9 +221,9 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 - [T] POST/GET /api/database-connections, GET/PUT/DELETE /{id}, POST /{id}/test,
       POST /{id}/sync-schema, GET /{id}/schemas, GET /{id}/tables — all live-verified end-to-end
       against a real Postgres sample business database via `docker compose`
-- [ ] POST /api/files/upload, GET /api/files, GET /api/files/{id}, DELETE /api/files/{id},
+- [T] POST /api/files/upload, GET /api/files, GET /api/files/{id}, DELETE /api/files/{id},
       POST /api/files/{id}/reprocess
-- [ ] POST/GET /api/knowledge-bases, POST /api/knowledge-bases/{id}/files
+- [T] POST/GET /api/knowledge-bases, POST /api/knowledge-bases/{id}/files
 - [ ] POST/GET /api/conversations, GET/DELETE /api/conversations/{id}
 - [ ] POST /api/chat, POST /api/chat/stream, GET /api/messages/{id}/citations, GET /api/messages/{id}/sql
 - [T] Additional demo endpoints: user mgmt (GET/POST /api/users), role mgmt (GET/POST /api/roles,
