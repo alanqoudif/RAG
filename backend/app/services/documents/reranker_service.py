@@ -6,7 +6,7 @@ works correctly with it disabled, which is also the documented default.
 
 from functools import lru_cache
 
-from app.config import Settings, get_settings
+from app.config import get_settings
 
 
 class Reranker:
@@ -22,8 +22,8 @@ class Reranker:
 
 
 @lru_cache
-def get_reranker(settings: Settings | None = None) -> Reranker | None:
-    settings = settings or get_settings()
+def get_reranker() -> Reranker | None:
+    settings = get_settings()
     if not settings.reranker_enabled:
         return None
     return Reranker(settings.reranker_model)

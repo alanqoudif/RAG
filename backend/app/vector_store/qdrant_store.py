@@ -30,7 +30,7 @@ class SearchHit:
 class VectorStore:
     def __init__(self, settings: Settings):
         self._settings = settings
-        self._client = QdrantClient(url=settings.qdrant_url)
+        self._client = QdrantClient(url=settings.qdrant_url, check_compatibility=False)
         self._collection = settings.qdrant_collection
 
     def ensure_collection(self, dimension: int) -> None:

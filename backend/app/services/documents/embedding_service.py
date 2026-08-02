@@ -5,7 +5,7 @@ for speed, `bge-m3` for stronger multilingual/Arabic support) purely through con
 from abc import ABC, abstractmethod
 from functools import lru_cache
 
-from app.config import Settings, get_settings
+from app.config import get_settings
 
 
 class EmbeddingProvider(ABC):
@@ -26,7 +26,7 @@ class SentenceTransformerEmbeddingProvider(EmbeddingProvider):
 
         self._model_name = model_name
         self._model = SentenceTransformer(model_name)
-        self._dimension = self._model.get_sentence_embedding_dimension()
+        self._dimension = self._model.get_embedding_dimension()
 
     @property
     def dimension(self) -> int:
@@ -38,6 +38,6 @@ class SentenceTransformerEmbeddingProvider(EmbeddingProvider):
 
 
 @lru_cache
-def get_embedding_provider(settings: Settings | None = None) -> EmbeddingProvider:
-    settings = settings or get_settings()
+def get_embedding_provider() -> EmbeddingProvider:
+    settings = get_settings()
     return SentenceTransformerEmbeddingProvider(settings.embedding_model)

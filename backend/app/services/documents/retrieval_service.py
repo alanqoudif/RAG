@@ -73,7 +73,7 @@ def retrieve(
             )
         )
 
-    reranker = get_reranker(settings)
+    reranker = get_reranker()
     if reranker is not None and results:
         scores = reranker.rerank(query, [r.content for r in results])
         for result, score in zip(results, scores, strict=True):
