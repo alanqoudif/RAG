@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     chunk_overlap_tokens: int = 60
     allow_sample_values: bool = False
     sample_values_limit: int = 3
+    use_docling: bool = False
+    retrieval_top_k: int = 5
 
     # Seeding
     seed_on_startup: bool = False
