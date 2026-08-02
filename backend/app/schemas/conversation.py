@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class ConversationCreateRequest(BaseModel):
@@ -52,6 +52,4 @@ class SqlDetailResponse(BaseModel):
     normalized_sql: str | None
     validation_status: str
     execution_status: str | None
-    row_count: int | None = Field(alias="returned_row_count")
-
-    model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+    row_count: int | None
