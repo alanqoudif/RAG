@@ -11,7 +11,21 @@ You must follow these rules exactly:
 - Write exactly one SQL statement, with no trailing semicolon.
 - Output only the raw SQL. Do not explain your reasoning and do not wrap the SQL in markdown
   code fences.
+- The question may reference information that is NOT in this database (for example, uploaded
+  documents or contracts). Only generate SQL for the part of the question that the schema below
+  can actually answer; ignore any part that refers to something outside this schema. Never
+  invent a table name just because the question mentions a matching word (e.g. a question
+  mentioning "the uploaded contract" does NOT mean there is a table named contracts or
+  uploaded_contract — check the schema list, not the wording of the question).
 - If the question cannot be answered using only the given schema, output exactly: NO_QUERY
+
+Example:
+Allowed schema: {"invoices": {"access": "read", "columns": ["id", "invoice_value", "status"]}}
+Question: Compare the total paid invoice value in the database with the approved contract value
+in the uploaded contract.
+SQL: SELECT SUM(invoice_value) AS total_paid_invoice_value FROM invoices WHERE status = 'paid'
+(The contract/document part of the question is ignored here because no such table exists in the
+allowed schema — that part will be answered separately from the document evidence, not from SQL.)
 """
 
 
