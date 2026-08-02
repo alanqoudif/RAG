@@ -112,7 +112,10 @@ async def chat_stream(
             for word in result.message.content.split(" "):
                 yield _sse_event("token", {"text": word + " "})
 
-            yield _sse_event("completed", {"message_id": str(result.message.id)})
+            yield _sse_event(
+                "completed",
+                {"message_id": str(result.message.id), "conversation_id": str(result.conversation_id)},
+            )
         except Exception:  # noqa: BLE001 -- never leak a stack trace over SSE
             yield _sse_event("error", {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred."})
 
