@@ -8,8 +8,10 @@ Built for the assignment in [`Text_to_SQL_and_Document_Chat_Assignment.pdf`](Tex
 See [`REQUIREMENTS_CHECKLIST.md`](REQUIREMENTS_CHECKLIST.md) for line-by-line requirement tracking and
 [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) for the architecture and phased build plan.
 
-> **Status:** Phase 1 complete (infra, FastAPI skeleton, Postgres, Alembic, health/logging/error
-> handling). This README grows with each phase; see the checklist for current coverage.
+> **Status:** All 7 phases complete and live-validated against a real local LLM, real Postgres,
+> real Qdrant, and real MinIO — including a full clean `docker compose up --build` from wiped
+> volumes. See [`FINAL_VALIDATION.md`](FINAL_VALIDATION.md) for the recorded final test run and
+> [`REQUIREMENTS_CHECKLIST.md`](REQUIREMENTS_CHECKLIST.md) for the line-by-line requirement status.
 
 ## Prerequisites
 
@@ -161,6 +163,18 @@ Or inside Docker:
 
 ```bash
 docker compose run --rm api pytest -v
+```
+
+## Acceptance demo script
+
+`backend/scripts/demo.py` reproduces the assignment's 7 acceptance scenarios end-to-end against a
+running stack (multi-tenancy rejection, runtime connection + schema sync, safe text-to-SQL,
+blocked destructive SQL, document chat with citations, hybrid chat, and full traceability):
+
+```bash
+docker compose up -d   # with SEED_ON_STARTUP=true in .env at least once
+cd backend && source .venv/bin/activate
+python scripts/demo.py
 ```
 
 ## Frontend (demo UI)
