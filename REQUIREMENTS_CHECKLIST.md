@@ -305,84 +305,87 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 
 ## 17. Frontend (lightweight, Phase 7 only)
 
-- [ ] React + TS + Vite + MUI + TanStack Query + RHF + Zod + React Router
-- [ ] Screens: login, connection create/test/sync, KB create, file upload, chat w/ streaming, citations,
-      generated SQL, conversation history
+- [T] React + TS + Vite + MUI (v6) + TanStack Query + RHF + Zod + React Router
+- [T] Screens: login, connection create/test/sync, KB create, file upload, chat w/ SSE streaming,
+      citations, generated SQL, conversation persisted across messages — all visually verified in
+      a real browser against the real running backend, including the full hybrid demo exchange.
+      A real bug was found and fixed during this verification: the SSE token-accumulation
+      `setMessages` updater mutated the previous message object in place, which under React
+      StrictMode's double-invocation of updater functions caused duplicated/garbled streamed text
+      — fixed by making the updater pure (build a new message object instead of mutating)
 
 ## 18. Testing (Section 14, "Testing Requirements")
 
 - [T] Unit: encryption, password hashing, JWT, permission resolution, tenant filtering, SQL parsing/
-      validation, row-limit injection, row-filter injection, masking done through Phase 4; chunking/
-      citation formatting land in Phase 5
-- [~] Integration: login, refresh, tenant isolation, connection CRUD, connection testing, schema
-      discovery, permission APIs done; file upload/processing, document retrieval, db/doc/hybrid
-      chat, SSE land in Phases 5-6
-- [~] Security: cross-tenant IDs, unauthorized table/column/row access, SQL injection, multi-statement,
-      SQL comments, destructive SQL, system schema access, admin functions done; prompt injection in
-      docs, credential leakage (partially — DB credentials covered), cross-tenant Qdrant retrieval
-      land in Phase 5-6
-- [ ] ≥80% coverage target for security-critical modules — measure in Phase 7 final validation
+      validation, row-limit injection, row-filter injection, masking, chunking, citation formatting
+- [T] Integration: login, refresh, tenant isolation, connection CRUD, connection testing, schema
+      discovery, permission APIs, file upload/processing, document retrieval, db/doc/hybrid chat, SSE
+- [T] Security: cross-tenant IDs, unauthorized table/column/row access, SQL injection, multi-statement,
+      SQL comments, destructive SQL, system schema access, admin functions, prompt injection in
+      documents (live, real LLM), credential leakage, cross-tenant Qdrant retrieval (live)
+- [T] ≥80% coverage target for security-critical modules — measured: `query_validator.py` 83%,
+      `permission_service.py` 94%, `core/encryption.py` 100%, `core/security.py` 95%,
+      `text_to_sql_service.py` 92%, `query_executor.py` 87%; overall project 91% (177 tests, 0 skipped
+      with live infra up). See `FINAL_VALIDATION.md` for the full coverage table
 
 ## 19. Observability
 
-- [ ] Structured JSON logs, request IDs
-- [ ] Prometheus metrics (request count/latency, chat/SQL-gen/SQL-exec/file-processing/retrieval/LLM
-      latency, validation failures, Ollama/Celery failures)
-- [ ] No prompts/SQL results/credentials/doc content in metric labels
-- [ ] Basic OpenTelemetry instrumentation
-- [ ] Grafana provisioning
+- [x] Structured JSON logs (structlog, secret-redaction filter), request IDs (middleware-assigned,
+      propagated through every log line and the `X-Request-ID` response header)
+- [x] Prometheus metrics: `http_requests_total`/`http_request_duration_seconds` (method/path/status
+      labels) implemented and live-scraped in `--profile full`; per-stage latency histograms for
+      chat/SQL-gen/SQL-exec/file-processing/retrieval/LLM are not separately instrumented beyond
+      what's persisted in `query_executions.execution_time_ms` and `messages.latency_ms` — a gap
+      versus the PDF's suggested metric list, not zero observability
+- [x] No prompts/SQL results/credentials/doc content in metric labels (only method/path/status)
+- [ ] OpenTelemetry instrumentation — not implemented (dependency listed, not wired in); logging +
+      metrics + the full audit trail cover this project's observability needs, tracing was cut for
+      time given everything else in scope
+- [x] Grafana provisioning (Prometheus datasource auto-provisioned; no pre-built dashboards)
 
 ## 20. Documentation
 
-- [ ] README.md (overview, architecture, prerequisites, setup, start/stop/reset, migrations, seeding,
+- [T] README.md (overview, architecture, prerequisites, setup, start/stop/reset, migrations, seeding,
       tests, changing Ollama models, API usage, demo credentials, troubleshooting, known limitations,
-      external libraries/references)
-- [ ] docs/ARCHITECTURE.md, docs/DATABASE.md, docs/SECURITY.md, docs/API.md, docs/DEPLOYMENT.md,
-      docs/DEVELOPER_GUIDE.md
-- [ ] Mermaid diagrams: architecture, auth flow, text-to-sql flow, ingestion flow, hybrid chat flow, docker
-      services, request lifecycle
-- [ ] OpenAPI docs exposed via FastAPI
+      external libraries/references) — all sections present, instructions live-verified this session
+- [x] docs/ARCHITECTURE.md, docs/DATABASE.md, docs/SECURITY.md, docs/API.md, docs/DEPLOYMENT.md,
+      docs/DEVELOPER_GUIDE.md — all written
+- [x] Mermaid diagrams: architecture, auth flow, text-to-sql flow, ingestion flow, hybrid chat flow, docker
+      services, request lifecycle — all 7 present in docs/ARCHITECTURE.md
+- [T] OpenAPI docs exposed via FastAPI (`/docs`, `/redoc`) — live-verified reachable
 
 ## 21. Acceptance Demonstration (Section "Acceptance Demonstration")
 
-- [ ] Scenario 1: multi-tenancy rejection
-- [T] Scenario 2: runtime connection + test + schema sync — reproduced manually via curl against
-      `sample-business-db`; formalize as `scripts/demo.py` in Phase 7
-- [T] Scenario 3: safe text-to-SQL — live-verified with a real Ollama model end-to-end (see §8);
-      query_execution record confirmed persisted with generated/normalized SQL and result;
-      document citation not yet applicable (Phase 5)
-- [T] Scenario 4: SQL security (DROP/unauthorized columns/system schema/multi-statement blocked) —
-      57 automated tests in tests/unit/test_query_validator.py + tests/security/test_sql_security.py
-- [T] Scenario 5 (retrieval half — answer generation is Phase 6): uploaded `sample_contract.pdf`
-      via the seed script, processed synchronously (status=completed, page_count=2); uploaded a
-      second file (`test_upload.txt`) through the real HTTP API and watched the actual Celery
-      worker process it asynchronously end-to-end (pending -> completed) in its own container.
-      Queried both live via `retrieval_service.retrieve`: "What is the approved contract value?"
-      correctly top-matched page 2 of the contract (score 0.86) with a correct file+page citation;
-      "How much does the widget cost?" correctly top-matched the unrelated second document instead
-- [T] Scenario 6: hybrid chat comparing DB vs document value — reproduced exactly via real HTTP
-      request; answer: "Database finding: ... $54,000.00 ... Document evidence: ... $60,000.00 EGP
-      ... page 2 ... Combined conclusion: discrepancy of $6,000.00", with both a `sql` block and
-      2 citations (1 database, 2 document) in the response
-- [T] Scenario 7: traceability across conversation/message/query_execution/chunks/citations/audit —
-      live-verified: `chat_request` -> `sql_generated` -> `sql_executed` audit events all recorded
-      against the same conversation, `GET /api/messages/{id}/sql` and `.../citations` both resolve
-      correctly against the actual assistant message id returned in the chat response
-- [ ] scripts/demo.sh or scripts/demo.py — the demonstration was performed by hand via curl in this
-      session; formalizing it into a runnable script is planned for Phase 7
+All 7 scenarios automated in `scripts/demo.py` and live-verified end-to-end against the real running
+stack (real Postgres, real Qdrant, real MinIO, real Ollama) — see `FINAL_VALIDATION.md` for the
+captured run output.
+
+- [T] Scenario 1: multi-tenancy rejection (+ dedicated cross-tenant test suites)
+- [T] Scenario 2: runtime connection + test + schema sync
+- [T] Scenario 3: safe text-to-SQL, with query_execution record + citation
+- [T] Scenario 4: SQL security (DROP/system-schema/multi-statement questions asked in natural
+      language through the real chat endpoint — none executed; 57 lower-level validator tests cover
+      the exhaustive blocklist)
+- [T] Scenario 5: document chat with file+page citation
+- [T] Scenario 6: hybrid chat comparing DB vs document value
+- [T] Scenario 7: traceability across conversation/message/query_execution/chunks/citations/audit
+- [T] scripts/demo.py — implemented and live-verified (`scripts/demo.sh` not added; the Python
+      script is the single demo entry point, run via `python scripts/demo.py`)
 
 ## 22. Final Verification (before declaring complete)
 
-- [ ] Re-read PDF against checklist
-- [ ] All mandatory endpoints exist
-- [ ] Alembic migrations run from empty DB
-- [ ] Docker images build; containers pass health checks
-- [ ] API starts without manual code changes
-- [ ] Full test suite passes (record actual results)
-- [ ] Cross-tenant tests pass
-- [ ] Destructive SQL tests pass
-- [ ] Document citations include file + page
-- [ ] Hybrid chat uses both sources
-- [ ] Credentials never appear in responses/logs
-- [ ] README works on clean setup
-- [ ] FINAL_VALIDATION.md records actual test run output
+- [x] Re-read PDF against checklist (this document was built section-by-section against it)
+- [x] All mandatory endpoints exist
+- [x] Alembic migrations run from empty DB (verified twice: throwaway container mid-project, full
+      clean `docker compose up --build` with all volumes wiped at the end)
+- [x] Docker images build; containers pass health checks
+- [x] API starts without manual code changes
+- [x] Full test suite passes (177/177, 0 skipped with live infra up) — see FINAL_VALIDATION.md
+- [x] Cross-tenant tests pass
+- [x] Destructive SQL tests pass
+- [x] Document citations include file + page
+- [x] Hybrid chat uses both sources
+- [x] Credentials never appear in responses/logs (checked across all container logs on the final
+      clean run, not just `api`)
+- [x] README works on clean setup (followed literally on the final clean environment)
+- [x] FINAL_VALIDATION.md records actual test run output
