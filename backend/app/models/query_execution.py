@@ -13,10 +13,7 @@ if TYPE_CHECKING:
 
 class QueryExecution(Base, TimestampMixin):
     """Full audit trail of one generated-SQL attempt: what was generated, how it was validated
-    and rewritten, and what happened when (if) it ran. `conversation_id`/`message_id` are plain
-    UUID columns without a foreign key for now — the `conversations`/`messages` tables land in
-    Phase 6, at which point a follow-up migration adds the FK constraints (the columns keep the
-    same name and type, so no data migration is needed).
+    and rewritten, and what happened when (if) it ran.
     """
 
     __tablename__ = "query_executions"
@@ -25,8 +22,12 @@ class QueryExecution(Base, TimestampMixin):
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    conversation_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
-    message_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
+    conversation_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    message_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("messages.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     connection_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("database_connections.id", ondelete="CASCADE"), nullable=False, index=True
     )

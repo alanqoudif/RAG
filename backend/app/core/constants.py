@@ -64,6 +64,18 @@ AUDIT_FILE_PROCESSING_FAILED = "file_processing_failed"
 CITATION_TYPE_DOCUMENT = "document"
 CITATION_TYPE_DATABASE = "database"
 
+# Chat request intents
+INTENT_GENERAL = "general"
+INTENT_DATABASE = "database"
+INTENT_DOCUMENT = "document"
+INTENT_HYBRID = "hybrid"
+INTENT_CLARIFICATION = "clarification"
+
+AUDIT_CHAT_REQUEST = "chat_request"
+
+MESSAGE_ROLE_USER = "user"
+MESSAGE_ROLE_ASSISTANT = "assistant"
+
 # JWT
 TOKEN_TYPE_ACCESS = "access"
 

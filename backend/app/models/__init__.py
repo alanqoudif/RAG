@@ -1,6 +1,7 @@
 from app.infrastructure.database import Base
 from app.models.audit_log import AuditLog
 from app.models.column_permission import ColumnPermission
+from app.models.conversation import Conversation
 from app.models.database_column import DatabaseColumn
 from app.models.database_connection import DatabaseConnection
 from app.models.database_schema import DatabaseSchema
@@ -8,6 +9,8 @@ from app.models.database_table import DatabaseTable
 from app.models.document_chunk import DocumentChunk
 from app.models.file import File
 from app.models.knowledge_base import KnowledgeBase
+from app.models.message import Message
+from app.models.message_citation import MessageCitation
 from app.models.query_execution import QueryExecution
 from app.models.refresh_token import RefreshToken
 from app.models.role import Role, UserRole
@@ -19,6 +22,7 @@ __all__ = [
     "AuditLog",
     "Base",
     "ColumnPermission",
+    "Conversation",
     "DatabaseColumn",
     "DatabaseConnection",
     "DatabaseSchema",
@@ -26,6 +30,8 @@ __all__ = [
     "DocumentChunk",
     "File",
     "KnowledgeBase",
+    "Message",
+    "MessageCitation",
     "QueryExecution",
     "RefreshToken",
     "Role",
