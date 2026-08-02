@@ -37,9 +37,13 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 - [T] database_columns (is_sensitive, referenced_schema/table/column, sample_values)
 - [ ] table_permissions (role_id XOR user_id, can_read/insert/update/delete, row_filter)
 - [ ] column_permissions (can_read/filter/aggregate, mask_type)
-- [ ] knowledge_bases
-- [ ] files (processing_status, checksum, page_count)
-- [ ] document_chunks (chunk_index, page_number, section_title, embedding VECTOR(1024))
+- [T] knowledge_bases
+- [T] files (processing_status, checksum, page_count)
+- [~] document_chunks (chunk_index, page_number, section_title) — embedding vector intentionally
+      NOT stored as a column here; it lives in Qdrant (chunk id == Qdrant point id), matching the
+      PDF's own architecture split ("Vector Database: Stores embeddings for uploaded document
+      chunks" as a distinct component from the Application DB). Documented deviation from the
+      literal reference `VECTOR(1024)` column, core fields otherwise unchanged
 - [ ] conversations (active_connection_ids, active_knowledge_base_ids)
 - [ ] messages (detected_intent, selected_sources, tokens, latency_ms)
 - [ ] query_executions (generated_sql, normalized_sql, validation_status/errors, referenced_tables/columns)
@@ -169,16 +173,24 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 
 ## 9. Document Processing
 
-- [ ] Support PDF, DOCX, XLSX, CSV, TXT
-- [ ] Flow: upload -> validate -> MinIO store -> DB record -> Celery task -> parse -> clean -> chunk ->
-      embed -> Qdrant store -> chunk metadata saved -> status completed/failed
-- [ ] Docling + format-specific fallback parsers
-- [ ] XLSX/CSV: preserve sheet name + row ranges, no single mega-chunk
-- [ ] PDF: preserve page number + section info
-- [ ] DOCX: preserve headings
-- [ ] Chunk metadata: tenant_id, knowledge_base_id, file_id, file_name, page_number, section_title,
-      chunk_index, checksum
-- [ ] Qdrant search always filtered by tenant_id + allowed knowledge_base_ids
+- [T] Support PDF, DOCX, XLSX, CSV, TXT — one parser per format, all unit tested against
+      real generated fixtures (python-docx/openpyxl in-memory documents, a hand-built 2-page PDF)
+- [T] Flow: upload -> validate (extension + size) -> MinIO store -> DB record (status=pending) ->
+      Celery task -> parse -> chunk -> embed -> Qdrant store -> chunk metadata saved -> status
+      completed/failed. Live-verified end-to-end against real MinIO + Qdrant + a real local
+      embedding model (BAAI/bge-small-en-v1.5) — see tests/integration/test_document_processor_live.py
+- [~] Docling wired in behind `USE_DOCLING` (default off — its first run downloads its own
+      layout/OCR models, out of this session's resource budget); format-specific parsers
+      (pypdf/python-docx/openpyxl/csv) are the default, always-available, fully tested path
+- [T] XLSX/CSV: preserve sheet name + row ranges (50 rows/chunk), no single mega-chunk — unit
+      tested including a 150-row sheet producing 3 chunks
+- [T] PDF: preserve page number (per-page segments, verified against the real sample_contract.pdf)
+- [T] DOCX: preserve headings (heading-delimited segments, unit tested incl. no-heading fallback)
+- [T] Chunk metadata: tenant_id, knowledge_base_id, file_id, file_name, page_number, section_title,
+      chunk_index, checksum — stored in both the `document_chunks` row and the Qdrant point payload
+- [T] Qdrant search always filtered by tenant_id + allowed knowledge_base_ids —
+      `VectorStore.search` returns `[]` immediately if `knowledge_base_ids` is empty, and live-tested
+      that a second tenant searching the first tenant's real knowledge_base_id gets zero results
 
 ## 10. Document Retrieval & Hybrid Chat
 
