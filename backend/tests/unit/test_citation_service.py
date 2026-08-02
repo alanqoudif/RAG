@@ -1,6 +1,9 @@
 import uuid
 
-from app.services.documents.citation_service import format_document_citation, has_sufficient_evidence
+from app.services.documents.citation_service import (
+    format_document_citation,
+    has_sufficient_evidence,
+)
 from app.services.documents.retrieval_service import RetrievedChunk
 
 
