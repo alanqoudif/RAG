@@ -51,6 +51,19 @@ VALIDATION_FAILED = "failed"
 EXECUTION_SUCCESS = "success"
 EXECUTION_FAILED = "failed"
 
+# File processing statuses
+STATUS_PROCESSING = "processing"
+
+SUPPORTED_FILE_EXTENSIONS = {".pdf", ".docx", ".xlsx", ".csv", ".txt"}
+MAX_UPLOAD_FILE_SIZE_BYTES = 25 * 1024 * 1024
+
+AUDIT_FILE_UPLOADED = "file_uploaded"
+AUDIT_FILE_PROCESSED = "file_processed"
+AUDIT_FILE_PROCESSING_FAILED = "file_processing_failed"
+
+CITATION_TYPE_DOCUMENT = "document"
+CITATION_TYPE_DATABASE = "database"
+
 # JWT
 TOKEN_TYPE_ACCESS = "access"
 
