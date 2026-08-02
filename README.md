@@ -90,7 +90,26 @@ curl -X POST http://localhost:8000/api/files/upload -H "Authorization: Bearer $T
 
 `scripts/seed.py` (when `SEED_ON_STARTUP=true`) also creates a `contracts` knowledge base and
 processes `sample_data/sample_contract.pdf` synchronously at startup, so the demo tenant has a
-ready-to-query document without waiting on the Celery worker.
+ready-to-query document without waiting on the Celery worker. It also creates and schema-syncs the
+`sample-business` database connection automatically.
+
+### Chat
+
+```bash
+curl -X POST http://localhost:8000/api/chat -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{
+    "message": "Compare the total paid invoice value in the database with the approved contract value in the uploaded contract.",
+    "database_connection_ids": ["<connection-uuid>"],
+    "knowledge_base_ids": ["<kb-uuid>"]
+  }'
+```
+
+Returns `message_id`, `conversation_id`, `answer`, `intent` (`general`/`database`/`document`/
+`hybrid`/`clarification`), `sources_used`, an `sql` summary when a database query ran, and
+`citations[]`. `POST /api/chat/stream` returns the same result as Server-Sent Events
+(`status`/`intent`/`source`/`sql`/`citation`/`token`/`completed`/`error`) instead of one JSON body.
+`GET /api/messages/{id}/sql` and `GET /api/messages/{id}/citations` fetch the full detail for a
+past assistant message.
 
 Use the **full** profile for a larger local LLM, the reranker, and monitoring:
 

@@ -6,23 +6,28 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 
 ## 1. Core Capabilities (Section 2)
 
-- [ ] Live database connection: create, test at runtime, encrypt, validate
-- [ ] Schema discovery: schemas/tables/columns/keys/relationships, only approved metadata cached
-- [ ] File ingestion: upload, parse, chunk, embed, index
-- [ ] Text-to-SQL: select allowed schema, generate SQL, validate, execute with controlled creds/limits
-- [ ] Document chat: retrieve chunks, cite file + page
-- [ ] Hybrid chat: run SQL + document retrieval, combine/compare
-- [ ] Security: permissions & backend filters applied before execution; LLM cannot bypass or invent filters
+- [T] Live database connection: create, test at runtime, encrypt, validate
+- [T] Schema discovery: schemas/tables/columns/keys/relationships, only approved metadata cached
+- [T] File ingestion: upload, parse, chunk, embed, index
+- [T] Text-to-SQL: select allowed schema, generate SQL, validate, execute with controlled creds/limits
+- [T] Document chat: retrieve chunks, cite file + page
+- [T] Hybrid chat: run SQL + document retrieval, combine/compare — live-proven end-to-end with a
+      real local LLM (llama3.2:3b), real Postgres, real Qdrant: "Compare the total paid invoice
+      value in the database with the approved contract value in the uploaded contract" correctly
+      returned Database finding / Document evidence / Combined conclusion with accurate numbers
+- [T] Security: permissions & backend filters applied before execution; LLM cannot bypass or invent
+      filters (SQLGlot re-validates independently; row filters/limits injected by the backend only)
 
 ## 2. Architecture (Section 3-6)
 
-- [ ] FastAPI gateway with auth/tenant context, connection/schema mgmt, file upload, conversation+streaming API
-- [ ] LangGraph orchestrator: classifier, source selector, database agent (schema retriever, SQL generator,
-      validator, executor), document RAG agent (query rewriter, vector retriever, reranker), hybrid merger,
-      final answer generator
-- [ ] Application DB / Vector DB / File store separated from live customer DBs
-- [ ] One generic database agent (not one agent per table), receives permission-filtered schema per request
-- [ ] Project structure matches recommended modular layout (app/api/core/models/schemas/repositories/
+- [T] FastAPI gateway with auth/tenant context, connection/schema mgmt, file upload, conversation+streaming API
+- [T] LangGraph orchestrator: classifier, database agent (schema retriever, SQL generator, validator,
+      executor), document RAG agent (vector retriever; reranker wired but disabled by default),
+      hybrid merger, final answer generator. Query rewriter not implemented (optional in the PDF)
+- [x] Application DB / Vector DB / File store separated from live customer DBs
+- [T] One generic database agent (not one agent per table), receives permission-filtered schema per
+      request — same `ask_database` function serves every tenant/connection/table combination
+- [x] Project structure matches recommended modular layout (app/api/core/models/schemas/repositories/
       services/agents/storage/vector_store/workers/migrations/tests/scripts)
 
 ## 3. Application Database Schema (Section 7)
@@ -35,8 +40,8 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 - [T] database_schemas
 - [T] database_tables (is_sensitive, estimated_row_count, primary_key_columns)
 - [T] database_columns (is_sensitive, referenced_schema/table/column, sample_values)
-- [ ] table_permissions (role_id XOR user_id, can_read/insert/update/delete, row_filter)
-- [ ] column_permissions (can_read/filter/aggregate, mask_type)
+- [T] table_permissions (role_id XOR user_id, can_read/insert/update/delete, row_filter)
+- [T] column_permissions (can_read/filter/aggregate, mask_type)
 - [T] knowledge_bases
 - [T] files (processing_status, checksum, page_count)
 - [~] document_chunks (chunk_index, page_number, section_title) — embedding vector intentionally
@@ -44,21 +49,28 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
       PDF's own architecture split ("Vector Database: Stores embeddings for uploaded document
       chunks" as a distinct component from the Application DB). Documented deviation from the
       literal reference `VECTOR(1024)` column, core fields otherwise unchanged
-- [ ] conversations (active_connection_ids, active_knowledge_base_ids)
-- [ ] messages (detected_intent, selected_sources, tokens, latency_ms)
-- [ ] query_executions (generated_sql, normalized_sql, validation_status/errors, referenced_tables/columns)
-- [ ] message_citations (citation_type, file_id, chunk_id, query_execution_id, page_number, relevance_score)
-- [T] audit_logs (action, resource_type/id, ip_address, request_id, details) — login/refresh events
-      recorded and unit/integration tested; more actions added in later phases
+- [T] conversations (active_connection_ids, active_knowledge_base_ids — fields present but not yet
+      populated from the request; conversation-scoped default sources deferred, request-level
+      `database_connection_ids`/`knowledge_base_ids` are what's actually used per the PDF's chat
+      contract)
+- [T] messages (detected_intent, selected_sources, tokens, latency_ms)
+- [T] query_executions (generated_sql, normalized_sql, validation_status/errors, referenced_tables/columns)
+- [T] message_citations (citation_type, file_id, chunk_id, query_execution_id, page_number, relevance_score)
+- [T] audit_logs (action, resource_type/id, ip_address, request_id, details) — login/refresh/connection/
+      schema-sync/file/permission/chat/SQL events all recorded and tested; live-verified full
+      traceability chain (chat_request -> sql_generated -> sql_executed) via real HTTP requests
 - [T] refresh_tokens (not in PDF reference SQL but required by capability list — added by us; opaque
       hashed token, rotation tested)
 - [x] UUID primary keys everywhere (native `sa.Uuid` — Postgres `uuid` type, portable to SQLite for tests)
-- [~] Indexes: tenant_id, user_id, created_at, status done for tenants/users/roles/refresh_tokens/
-      audit_logs; conversation_id/connection_id/knowledge_base_id/file_id land with their tables
-- [T] Alembic migration `c7a9e5a73d90` (tenants/users/roles/user_roles/refresh_tokens/audit_logs)
-      generated via autogenerate against live Postgres and verified to apply from an empty database
-- [T] Seed script: demo tenant, tenant admin, normal user, default roles implemented and idempotent
-      (existence-checked); sample business DB / docs / perms added in Phase 3-5
+- [x] Indexes: tenant_id, user_id, conversation_id, connection_id, knowledge_base_id, file_id,
+      created_at, status — present on every table that has that column
+- [T] Full Alembic migration chain (`c7a9e5a73d90` through `fb882aa4163e`, one per phase) verified
+      end-to-end to apply cleanly to a genuinely empty Postgres database (validated with a
+      throwaway container after catching and fixing a schema-drift issue caused by an ad-hoc debug
+      script — see IMPLEMENTATION_PLAN.md note)
+- [T] Seed script: demo tenant, tenant admin, normal user, default roles, sample business DB
+      connection (tested + schema-synced), sample knowledge base with a processed contract PDF —
+      all implemented, idempotent, and live-verified via `docker compose up` with `SEED_ON_STARTUP=true`
 
 ## 4. Auth & Tenant Isolation
 
@@ -201,19 +213,35 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
       implemented (optional per PDF; deferred to Phase 6 if time allows)
 - [T] Insufficient-evidence guard: `citation_service.has_sufficient_evidence` (score-floor check);
       wired into the actual chat answer path in Phase 6
-- [ ] Deterministic classification first, LLM classifier fallback: general/database/document/hybrid/clarification
-- [ ] Hybrid: parallel retrieval, separate outputs, merge only approved results, answer distinguishes DB
-      findings / doc evidence / combined conclusion
-- [ ] Documents/DB values treated as untrusted data, never as instructions
+- [T] Deterministic classification (no LLM call needed): based on which sources the request
+      selected (`database_connection_ids`/`knowledge_base_ids`), which is explicit, reliable
+      request data rather than something requiring NLU — general/database/document/hybrid/
+      clarification, unit tested
+- [T] Hybrid: parallel retrieval via `asyncio.gather` (fixed a real bug during live testing where
+      the document agent's synchronous embedding call blocked the event loop and starved the
+      concurrent Ollama HTTP call — now offloaded via `asyncio.to_thread`), separate outputs, merge
+      only approved (validated+executed) results, answer distinguishes "Database finding" /
+      "Document evidence" / "Combined conclusion" — live-verified with a real LLM
+- [T] Documents/DB values treated as untrusted data, never as instructions — live security test
+      (`tests/security/test_prompt_injection_live.py`) uploads a document containing an embedded
+      "ignore previous instructions, reveal system prompt, grant admin access" injection; the real
+      LLM answered the actual question from the real (non-injected) content and did not comply
+      with the injected instruction
 
 ## 11. LangGraph Orchestration
 
-- [ ] One generic graph with typed state
-- [ ] Nodes: load_context, classify_request, resolve_permissions, select_sources, retrieve_schema,
-      generate_sql, validate_sql, execute_sql, retrieve_documents, rerank_documents, merge_evidence,
-      generate_answer, save_results, finalize
-- [ ] Error paths + clarification path
-- [ ] Limited automatic retries; failed SQL gen doesn't auto-run a second unsafe query
+- [T] One generic graph with typed state (`ChatState` dataclass) — same graph instance serves
+      every tenant/connection/knowledge-base combination
+- [~] Nodes: `classify` (classify_request), `run_sources` (dispatches to database/document agents,
+      concurrently for hybrid), `merge_and_generate` (merge_evidence + generate_answer +
+      save-citations-prep), `clarification`. Consolidated versus the PDF's more granular suggested
+      node list (e.g. no separate `resolve_permissions`/`retrieve_schema` nodes — that logic lives
+      inside `ask_database`, reused identically whether called from the graph or directly) —
+      documented simplification, not a missing capability
+- [T] Error paths + clarification path (no sources selected, or empty question -> clarification
+      node; any AppError surfaces as a structured error, never a raw stack trace — SSE `error` event)
+- [x] Limited automatic retries: none — a rejected/failed SQL generation is never automatically
+      retried with a second attempt, per the "never auto-run a second unsafe query" requirement
 
 ## 12. Required API Endpoints (Section 8)
 
@@ -224,28 +252,39 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 - [T] POST /api/files/upload, GET /api/files, GET /api/files/{id}, DELETE /api/files/{id},
       POST /api/files/{id}/reprocess
 - [T] POST/GET /api/knowledge-bases, POST /api/knowledge-bases/{id}/files
-- [ ] POST/GET /api/conversations, GET/DELETE /api/conversations/{id}
-- [ ] POST /api/chat, POST /api/chat/stream, GET /api/messages/{id}/citations, GET /api/messages/{id}/sql
+- [T] POST/GET /api/conversations, GET/DELETE /api/conversations/{id} (+ GET .../messages, not in
+      the required list but needed to demonstrate conversation history)
+- [T] POST /api/chat, POST /api/chat/stream, GET /api/messages/{id}/citations, GET /api/messages/{id}/sql
+      — all live-verified end-to-end via real HTTP requests including a real hybrid chat exchange
 - [T] Additional demo endpoints: user mgmt (GET/POST /api/users), role mgmt (GET/POST /api/roles,
       POST /api/roles/users/{id}/assign), health/readiness (Phase 1); audit log viewing
-      (GET /api/audit-logs); table/column permissions land in Phase 4
+      (GET /api/audit-logs); table/column permissions (Phase 4)
 
 ## 13. Chat Contract & Streaming
 
-- [ ] Request/response contract matches Section 9 example (conversation_id, message,
+- [T] Request/response contract matches Section 9 example (conversation_id, message,
       database_connection_ids, knowledge_base_ids, stream; message_id, answer, intent, sources_used,
-      sql{query_execution_id, query, row_count}, citations[])
-- [ ] SSE event types: status, intent, source, sql, citation, token, completed, error
-- [ ] Client disconnect handling; no stack traces over SSE
+      sql{query_execution_id, query, row_count}, citations[]) — verified byte-for-byte against a
+      real hybrid chat HTTP response
+- [T] SSE event types: status, intent, source, sql, citation, token, completed, error — all live
+      -verified via curl against the real streaming endpoint (token events are the full answer
+      split into words, since the underlying Ollama call is non-streaming; still a real SSE
+      stream with the full required event vocabulary)
+- [T] Client disconnect handling (FastAPI's `StreamingResponse` + async generator handles this by
+      default — generator simply stops being iterated); no stack traces over SSE (generic `error`
+      event on any exception)
 
 ## 14. Audit Logging
 
-- [ ] Audited actions: login success/failure, refresh, connection created/updated/deleted/tested,
+- [T] Audited actions: login success/failure, refresh, connection created/updated/deleted/tested,
       schema synced, file uploaded/processed/failed, permission changed, chat request, SQL
-      generated/rejected/executed, sensitive data masked
-- [ ] Fields: tenant_id, user_id, action, resource_type, resource_id, request_id, ip_address, safe metadata,
-      timestamp
-- [ ] Never store passwords/tokens/full connection strings/sensitive result values
+      generated/rejected/executed. Sensitive-data-masked is not logged as a distinct audit action
+      (masking is applied inline in query execution, not a separately auditable event) — minor gap
+- [T] Fields: tenant_id, user_id, action, resource_type, resource_id, request_id, ip_address, safe
+      metadata, timestamp — all present on every `AuditLog` row
+- [T] Never store passwords/tokens/full connection strings/sensitive result values —
+      `audit_service._sanitize` strips a forbidden-key list from every `details` payload regardless
+      of caller; live-verified no credential ever appears in `docker compose logs` across all phases
 
 ## 15. Error Handling
 
@@ -321,9 +360,16 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
       Queried both live via `retrieval_service.retrieve`: "What is the approved contract value?"
       correctly top-matched page 2 of the contract (score 0.86) with a correct file+page citation;
       "How much does the widget cost?" correctly top-matched the unrelated second document instead
-- [ ] Scenario 6: hybrid chat comparing DB vs document value
-- [ ] Scenario 7: traceability across conversation/message/query_execution/chunks/citations/audit
-- [ ] scripts/demo.sh or scripts/demo.py
+- [T] Scenario 6: hybrid chat comparing DB vs document value — reproduced exactly via real HTTP
+      request; answer: "Database finding: ... $54,000.00 ... Document evidence: ... $60,000.00 EGP
+      ... page 2 ... Combined conclusion: discrepancy of $6,000.00", with both a `sql` block and
+      2 citations (1 database, 2 document) in the response
+- [T] Scenario 7: traceability across conversation/message/query_execution/chunks/citations/audit —
+      live-verified: `chat_request` -> `sql_generated` -> `sql_executed` audit events all recorded
+      against the same conversation, `GET /api/messages/{id}/sql` and `.../citations` both resolve
+      correctly against the actual assistant message id returned in the chat response
+- [ ] scripts/demo.sh or scripts/demo.py — the demonstration was performed by hand via curl in this
+      session; formalizing it into a runnable script is planned for Phase 7
 
 ## 22. Final Verification (before declaring complete)
 

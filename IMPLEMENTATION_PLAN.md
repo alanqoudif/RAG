@@ -125,3 +125,20 @@ docker compose up --build                   # equivalent to dev (default profile
 Each phase ends with: run tests → lint (ruff) → typecheck (mypy, best-effort) → docker health check →
 update `REQUIREMENTS_CHECKLIST.md` → summary of files/features/tests → proceed automatically unless
 genuinely blocked on a decision only the user can make.
+
+## 8. Incident Log
+
+**Phase 6 — schema drift from an ad-hoc debug script.** While debugging the hybrid-chat text-to-SQL
+prompt, a one-off Python script called `Base.metadata.create_all(engine)` directly against the
+shared dev Postgres container to quickly test model changes, bypassing Alembic. This created the
+Phase 6 tables (conversations/messages/message_citations) in that database without an Alembic
+migration recording them, so the next `alembic revision --autogenerate` only picked up the
+leftover foreign-key additions and silently produced an incomplete migration (missing the
+`CREATE TABLE` statements — it would have failed on any genuinely empty database). Caught by
+routinely validating every migration against a **fresh, empty** database rather than trusting the
+already-migrated dev instance. Fix: deleted the bad migration, stood up a disposable throwaway
+Postgres container, replayed the full migration chain to confirm it matched the dev DB's
+pre-drift state, regenerated the migration there (now correctly including all three `CREATE
+TABLE`s), and reset the dev Postgres volume to pick up the corrected migration cleanly. Lesson
+reinforced: debug/scratch scripts that touch a database should use a disposable database, not the
+one whose migration history is being tracked.
