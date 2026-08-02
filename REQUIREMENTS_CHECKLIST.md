@@ -314,7 +314,13 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
       document citation not yet applicable (Phase 5)
 - [T] Scenario 4: SQL security (DROP/unauthorized columns/system schema/multi-statement blocked) —
       57 automated tests in tests/unit/test_query_validator.py + tests/security/test_sql_security.py
-- [ ] Scenario 5: document chat with file+page citation
+- [T] Scenario 5 (retrieval half — answer generation is Phase 6): uploaded `sample_contract.pdf`
+      via the seed script, processed synchronously (status=completed, page_count=2); uploaded a
+      second file (`test_upload.txt`) through the real HTTP API and watched the actual Celery
+      worker process it asynchronously end-to-end (pending -> completed) in its own container.
+      Queried both live via `retrieval_service.retrieve`: "What is the approved contract value?"
+      correctly top-matched page 2 of the contract (score 0.86) with a correct file+page citation;
+      "How much does the widget cost?" correctly top-matched the unrelated second document instead
 - [ ] Scenario 6: hybrid chat comparing DB vs document value
 - [ ] Scenario 7: traceability across conversation/message/query_execution/chunks/citations/audit
 - [ ] scripts/demo.sh or scripts/demo.py
