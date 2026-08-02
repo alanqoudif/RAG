@@ -94,21 +94,30 @@ export function ChatPage() {
             currentEvent = line.slice('event: '.length).trim()
           } else if (line.startsWith('data: ')) {
             const payload = JSON.parse(line.slice('data: '.length))
+            const eventName = currentEvent
+            // Build a new message object rather than mutating the previous one in place:
+            // React (StrictMode, in dev) can invoke a functional setState updater more than
+            // once to help surface exactly this kind of impurity — an in-place mutation would
+            // then get applied twice, duplicating tokens/citations.
             setMessages((prev) => {
-              const next = [...prev]
-              const last = next[next.length - 1]
-              if (last.role !== 'assistant') return next
+              const last = prev[prev.length - 1]
+              if (!last || last.role !== 'assistant') return prev
 
-              if (currentEvent === 'intent') last.intent = payload.intent
-              if (currentEvent === 'source') last.sourcesUsed = [...(last.sourcesUsed ?? []), payload.source]
-              if (currentEvent === 'sql') last.sql = payload
-              if (currentEvent === 'citation') last.citations = [...(last.citations ?? []), payload]
-              if (currentEvent === 'token') last.content += payload.text
-              if (currentEvent === 'completed') {
-                last.id = payload.message_id
+              const updated: DisplayMessage = { ...last }
+              if (eventName === 'intent') updated.intent = payload.intent
+              if (eventName === 'source') {
+                updated.sourcesUsed = [...(last.sourcesUsed ?? []), payload.source]
+              }
+              if (eventName === 'sql') updated.sql = payload
+              if (eventName === 'citation') {
+                updated.citations = [...(last.citations ?? []), payload]
+              }
+              if (eventName === 'token') updated.content = last.content + payload.text
+              if (eventName === 'completed') {
+                updated.id = payload.message_id
                 if (payload.conversation_id) setConversationId(payload.conversation_id)
               }
-              return next
+              return [...prev.slice(0, -1), updated]
             })
           }
         }
