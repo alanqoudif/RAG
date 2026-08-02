@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File as FastAPIFile, UploadFile
+from fastapi import APIRouter, Depends, UploadFile
+from fastapi import File as FastAPIFile
 from sqlalchemy.orm import Session
 
 from app.core.constants import AUDIT_FILE_UPLOADED

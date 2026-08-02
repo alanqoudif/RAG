@@ -7,7 +7,6 @@ from pathlib import Path
 
 
 def _text_object(lines: list[str], start_y: int = 750) -> bytes:
-    parts = [b"BT /F1 12 Tf 50 %d Td" % start_y]
     stream_lines = [f"BT /F1 12 Tf 50 {start_y} Td"]
     body = [f"({line}) Tj 0 -18 TD" for line in lines]
     stream_lines.extend(body)

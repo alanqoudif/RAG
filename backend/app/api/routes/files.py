@@ -1,6 +1,8 @@
+import contextlib
 import uuid
 
-from fastapi import APIRouter, Depends, File as FastAPIFile, Form, UploadFile
+from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi import File as FastAPIFile
 from sqlalchemy.orm import Session
 
 from app.core.constants import AUDIT_FILE_UPLOADED, STATUS_PENDING
@@ -83,10 +85,8 @@ def delete_file(
 ) -> None:
     file = _get_owned_file(db, current_user, file_id)
 
-    try:
+    with contextlib.suppress(Exception):  # object may already be gone; DB row deletion still proceeds
         get_object_storage().delete_object(file.storage_path)
-    except Exception:  # noqa: BLE001 -- object may already be gone; DB row deletion still proceeds
-        pass
     get_vector_store().delete_by_file_id(current_user.tenant_id, file.id)
     file_repository.delete(db, file)
 
