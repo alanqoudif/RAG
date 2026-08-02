@@ -158,6 +158,20 @@ def test_list_and_get_and_delete_file(client, db_session):
     assert missing_response.status_code == 404
 
 
+def test_reprocess_file_resets_status_to_pending(client, db_session):
+    headers = _seed_admin_and_login(client, db_session)
+    upload_response = client.post(
+        "/api/files/upload",
+        files={"upload": ("sample.txt", io.BytesIO(b"hello world"), "text/plain")},
+        headers=headers,
+    )
+    file_id = upload_response.json()["id"]
+
+    response = client.post(f"/api/files/{file_id}/reprocess", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["processing_status"] == "pending"
+
+
 def test_tenant_isolation_on_files(client, db_session):
     headers_a = _seed_admin_and_login(client, db_session, tenant_code="tenant-a")
     upload_response = client.post(
