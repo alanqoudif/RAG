@@ -80,7 +80,7 @@ class VectorStore:
     ) -> list[SearchHit]:
         if not knowledge_base_ids:
             return []
-        must_conditions = [
+        must_conditions: list[qmodels.Condition] = [
             qmodels.FieldCondition(key="tenant_id", match=qmodels.MatchValue(value=str(tenant_id))),
             qmodels.FieldCondition(
                 key="knowledge_base_id",
