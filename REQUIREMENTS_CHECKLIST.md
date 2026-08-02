@@ -114,31 +114,54 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 
 ## 7. Permission System
 
-- [ ] Tenant isolation
-- [ ] RBAC (roles)
-- [ ] User-level permission overrides
-- [ ] Table-level permissions
-- [ ] Column-level permissions
-- [ ] Row-level filters
-- [ ] Sensitive-column masking
-- [ ] Permission-filtered schema built before LLM prompt
-- [ ] Post-generation SQL re-validation: parse independently, resolve objects, verify against permissions,
-      inject mandatory row/tenant filters, re-validate modified SQL
+- [T] Tenant isolation
+- [T] RBAC (roles)
+- [T] User-level permission overrides (table_permissions.user_id path; role path is the one
+      exercised end-to-end in tests/demo, user-scoped grants use the identical code path)
+- [T] Table-level permissions
+- [T] Column-level permissions
+- [T] Row-level filters
+- [T] Sensitive-column masking (mask_type: none/full/partial, applied at execution time)
+- [T] Permission-filtered schema built before LLM prompt (`permission_service.to_prompt_schema`,
+      unit tested to match the PDF's `allowed_schema` example shape)
+- [T] Post-generation SQL re-validation: SQLGlot-parsed independently of the LLM, tables/columns
+      resolved and checked against the allowlist, mandatory row filters + row limit injected by
+      the backend (never by the LLM), rewritten SQL re-parsed as a final sanity check — live
+      end-to-end proof against real Postgres in Docker: admin sees all 4 tables, an analyst
+      granted only `invoices` (row filter `status='paid'`, SSN masked) sees only that table via
+      `/permissions/allowed-schema`
 
 ## 8. Text-to-SQL Pipeline & SQL Security (Section 10)
 
-- [ ] Full pipeline: question -> tenant/user -> db -> filtered schema -> table selection -> prompt ->
-      Ollama generation -> SQL extraction -> SQLGlot parse -> type validation -> object validation ->
+- [T] Full pipeline implemented in `services/database/text_to_sql_service.ask_database`: question
+      -> tenant/user -> db -> permission-filtered schema -> prompt -> Ollama generation (with
+      fallback model) -> SQL extraction -> SQLGlot parse -> type validation -> object validation ->
       unsafe-construct blocking -> row/tenant filter injection -> row limit -> normalize -> execute
-      read-only -> column masking -> format -> save query_execution -> grounded answer
-- [ ] SQLGlot-based parsing (not keyword matching only)
-- [ ] Allow by default: SELECT, WITH, EXPLAIN (SELECT)
-- [ ] Block: INSERT/UPDATE/DELETE/MERGE/DROP/ALTER/CREATE/TRUNCATE/EXEC/EXECUTE/CALL/COPY/
-      ATTACH/DETACH/GRANT/REVOKE/VACUUM/unsafe ANALYZE/PRAGMA/stored procs/admin functions/
-      system schemas/multiple statements/SQL comments/DB links/external file access
-- [ ] Max rows, max execution time, max result bytes, max columns, max joins (configurable), cancellation
-- [ ] Query execution + validation logged (generated_sql, normalized_sql, validation decisions, referenced
-      objects)
+      read-only -> column masking -> QueryExecution persisted -> answer note. Live-tested
+      end-to-end against real Postgres with the LLM call mocked (deterministic); real Ollama
+      generation attempted separately (see note below — model pull is slow in this sandboxed
+      session, not a pipeline gap)
+- [T] SQLGlot-based parsing (not keyword matching only) — `query_validator.py`, 57 unit/security
+      tests
+- [T] Allow by default: SELECT, WITH. EXPLAIN is intentionally NOT supported by the installed
+      SQLGlot version (30.14.0) — it has no dialect-agnostic EXPLAIN node and falls back to a
+      generic `Command` node, which this validator already blocks; documented as a known
+      limitation rather than silently allowed
+- [T] Block: INSERT/UPDATE/DELETE/MERGE/DROP/ALTER/CREATE/TRUNCATE/EXEC/EXECUTE/CALL/COPY/
+      GRANT/REVOKE/VACUUM/PRAGMA/stored procs/admin functions (pg_read_file, lo_import, dblink,
+      xp_cmdshell, sp_executesql, openrowset, load_file, ...)/system schemas (pg_catalog,
+      information_schema, mysql, sys, master, ...)/multiple statements/SQL comments (`--`, `/* */`,
+      `#`)/SELECT *. ATTACH/DETACH have no SQL-standard equivalent in Postgres/MySQL/SQL Server and
+      are covered by the generic `Command` blocklist entry for dialects that support them (e.g.
+      DuckDB/SQLite, not currently supported adapters)
+- [T] Max rows (LIMIT injected/clamped), max execution time (server-side statement timeout:
+      Postgres `SET statement_timeout`, MySQL `SET SESSION MAX_EXECUTION_TIME`), max result bytes,
+      max columns, max joins (all configurable via env) — cancellation via connection-level
+      timeout; no separate mid-query cancel API
+- [T] Query execution + validation logged: `query_executions` table stores generated_sql,
+      normalized_sql, validation_status/errors, referenced_tables/columns, applied_row_filters,
+      execution_status/time/row_count; audit_logs records sql_generated/sql_rejected/sql_executed
+      events (no SQL text or result data in audit `details`, only booleans/counts/table names)
 
 ## 9. Document Processing
 

@@ -52,6 +52,28 @@ Then `POST /api/database-connections/{id}/test` and `POST /api/database-connecti
 to discover its tables/columns. From the host machine (outside Docker), use `host: "localhost"` and
 `port: 5433` instead.
 
+### Table/column permissions
+
+Tenant admins see every synced table by default. To scope a non-admin role or user down to
+specific tables/columns/rows:
+
+```json
+POST /api/database-connections/{connection_id}/permissions
+{
+  "role_id": "<role-uuid>",
+  "table_id": "<table-uuid>",
+  "can_read": true,
+  "row_filter": {"column": "status", "op": "=", "value": "paid"},
+  "column_permissions": [
+    {"column_id": "<ssn-column-uuid>", "can_read": true, "mask_type": "full"}
+  ]
+}
+```
+
+`GET /api/database-connections/{connection_id}/permissions/allowed-schema` returns exactly what
+the caller's own permissions resolve to — the same shape the LLM prompt is built from, so it
+doubles as a way to verify a grant took effect.
+
 Use the **full** profile for a larger local LLM, the reranker, and monitoring:
 
 ```bash
