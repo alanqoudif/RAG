@@ -149,6 +149,16 @@ services:
       redis:
         condition: service_healthy
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "4173:4173"
+    depends_on:
+      - api
+    profiles: ["full"]
+
   prometheus:
     image: prom/prometheus:v2.55.1
     volumes:

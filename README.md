@@ -163,6 +163,22 @@ Or inside Docker:
 docker compose run --rm api pytest -v
 ```
 
+## Frontend (demo UI)
+
+A lightweight React + TypeScript + Vite frontend (MUI, TanStack Query, React Hook Form + Zod,
+React Router) demonstrates the backend: login, database connections (create/test/sync), knowledge
+bases + file upload, and a chat screen with live SSE streaming, citations, and generated SQL.
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:5173, proxies /api to http://localhost:8000
+```
+
+Or via Docker (`--profile full`, since it's optional per the assignment): `docker compose
+--profile full up --build` starts it on `http://localhost:4173` behind an nginx reverse proxy to
+the `api` service.
+
 ## API usage
 
 OpenAPI docs: `http://localhost:8000/docs` (Swagger) and `http://localhost:8000/redoc`.
