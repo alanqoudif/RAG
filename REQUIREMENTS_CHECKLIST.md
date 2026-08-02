@@ -137,10 +137,14 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
       -> tenant/user -> db -> permission-filtered schema -> prompt -> Ollama generation (with
       fallback model) -> SQL extraction -> SQLGlot parse -> type validation -> object validation ->
       unsafe-construct blocking -> row/tenant filter injection -> row limit -> normalize -> execute
-      read-only -> column masking -> QueryExecution persisted -> answer note. Live-tested
-      end-to-end against real Postgres with the LLM call mocked (deterministic); real Ollama
-      generation attempted separately (see note below — model pull is slow in this sandboxed
-      session, not a pipeline gap)
+      read-only -> column masking -> QueryExecution persisted -> answer note. Proven twice:
+      (1) automated pytest suite against real Postgres with the LLM call mocked (deterministic,
+      fast, CI-safe), and (2) a genuine live run with `llama3.2:3b` served by a real Ollama
+      container — asked "What is the total value of paid invoices?", the model produced
+      `SELECT SUM(T2.invoice_value) FROM orders AS T1 INNER JOIN invoices AS T2 ON T1.id =
+      T2.order_id WHERE T2.status = 'paid'`, SQLGlot validated it and appended `LIMIT 500`, and
+      it executed against the real sample-business-db returning `54000.0` — the exact expected
+      total from the seed data
 - [T] SQLGlot-based parsing (not keyword matching only) — `query_validator.py`, 57 unit/security
       tests
 - [T] Allow by default: SELECT, WITH. EXPLAIN is intentionally NOT supported by the installed
@@ -286,8 +290,11 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 - [ ] Scenario 1: multi-tenancy rejection
 - [T] Scenario 2: runtime connection + test + schema sync — reproduced manually via curl against
       `sample-business-db`; formalize as `scripts/demo.py` in Phase 7
-- [ ] Scenario 3: safe text-to-SQL with citation + query_execution record
-- [ ] Scenario 4: SQL security (DROP/unauthorized columns/system schema/multi-statement blocked)
+- [T] Scenario 3: safe text-to-SQL — live-verified with a real Ollama model end-to-end (see §8);
+      query_execution record confirmed persisted with generated/normalized SQL and result;
+      document citation not yet applicable (Phase 5)
+- [T] Scenario 4: SQL security (DROP/unauthorized columns/system schema/multi-statement blocked) —
+      57 automated tests in tests/unit/test_query_validator.py + tests/security/test_sql_security.py
 - [ ] Scenario 5: document chat with file+page citation
 - [ ] Scenario 6: hybrid chat comparing DB vs document value
 - [ ] Scenario 7: traceability across conversation/message/query_execution/chunks/citations/audit
