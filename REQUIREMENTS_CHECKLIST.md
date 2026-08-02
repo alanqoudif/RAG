@@ -256,14 +256,17 @@ Status legend: `[ ]` Not started · `[~]` In progress · `[x]` Implemented · `[
 
 ## 18. Testing (Section 14, "Testing Requirements")
 
-- [ ] Unit: encryption, password hashing, JWT, permission resolution, tenant filtering, SQL parsing/
-      validation, row-limit injection, row-filter injection, masking, chunking, citation formatting
-- [ ] Integration: login, refresh, tenant isolation, connection CRUD, connection testing, schema discovery,
-      permission APIs, file upload/processing, document retrieval, db chat, doc chat, hybrid chat, SSE
-- [ ] Security: cross-tenant IDs, unauthorized table/column/row access, SQL injection, multi-statement,
-      SQL comments, destructive SQL, system schema access, admin functions, prompt injection in docs,
-      credential leakage, cross-tenant Qdrant retrieval
-- [ ] ≥80% coverage target for security-critical modules
+- [T] Unit: encryption, password hashing, JWT, permission resolution, tenant filtering, SQL parsing/
+      validation, row-limit injection, row-filter injection, masking done through Phase 4; chunking/
+      citation formatting land in Phase 5
+- [~] Integration: login, refresh, tenant isolation, connection CRUD, connection testing, schema
+      discovery, permission APIs done; file upload/processing, document retrieval, db/doc/hybrid
+      chat, SSE land in Phases 5-6
+- [~] Security: cross-tenant IDs, unauthorized table/column/row access, SQL injection, multi-statement,
+      SQL comments, destructive SQL, system schema access, admin functions done; prompt injection in
+      docs, credential leakage (partially — DB credentials covered), cross-tenant Qdrant retrieval
+      land in Phase 5-6
+- [ ] ≥80% coverage target for security-critical modules — measure in Phase 7 final validation
 
 ## 19. Observability
 
